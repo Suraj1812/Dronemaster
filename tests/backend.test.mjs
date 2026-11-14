@@ -19,10 +19,12 @@ function moduleURL(path, replacements = {}) {
 }
 const bindings = {};
 globalThis.__backendTestBindings = bindings;
+const bridgeURL=moduleURL('../lib/bridge-auth.ts');
 const validationURL = moduleURL('../lib/inspection-validation.ts');
 const { handleApi } = await import(moduleURL('../lib/inspection-api.ts', {
   "import { env } from 'cloudflare:workers';": 'const env = globalThis.__backendTestBindings;',
   "import { getChatGPTUser } from '@/app/chatgpt-auth';": 'const getChatGPTUser = async () => globalThis.__backendTestUser;',
+  "from './bridge-auth'": `from '${bridgeURL}'`,
   "from './inspection-validation'": `from '${validationURL}'`,
 }));
 let sqlite, queries, objects, bucketReads;
@@ -213,4 +215,23 @@ test('photo analysis rejects foreign files and invalid generated payloads',async
  assert.equal((await handleApi(request('files/'+id+'/analysis','POST',body))).status,404);
  globalThis.__backendTestUser={userId:'owner'};
  assert.equal((await handleApi(request('files/'+id+'/analysis','POST',{...body,answer:''}))).status,400);
+});
+
+test('signed public sessions can access only their own workspace',async()=>{
+ bindings.DRONEMASTER_BRIDGE_SECRET='test-secret-long-enough-for-shared-bridge-auth';
+ const {bridgeSignature}=await import(bridgeURL);
+ const sid='a'.repeat(64),other='b'.repeat(64);
+ async function signed(path,session,method='GET',payload){
+  const text=payload===undefined?'':JSON.stringify(payload),stamp=String(Date.now());
+  const sig=await bridgeSignature(bindings.DRONEMASTER_BRIDGE_SECRET,stamp,method,'/api/'+path,session,new TextEncoder().encode(text));
+  return request(path,method,payload,{'x-dronemaster-session':session,'x-dronemaster-timestamp':stamp,'x-dronemaster-signature':sig});
+ }
+ globalThis.__backendTestUser=null;
+ const created=await handleApi(await signed('inspections',sid,'POST',{title:'Public inspection',site:'Roof'}));
+ assert.equal(created.status,201);const {id}=await created.json();
+ assert.equal((await handleApi(await signed('inspections/'+id,sid))).status,200);
+ assert.equal((await handleApi(await signed('inspections/'+id,other))).status,404);
+ const bad=await signed('inspections/'+id,sid);bad.headers.set('x-dronemaster-signature','0'.repeat(64));
+ assert.equal((await handleApi(bad)).status,401);
+ delete bindings.DRONEMASTER_BRIDGE_SECRET;
 });

@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { newInspection, newFinding, imageAnalysisInput, classificationInput, imageMime, markdownText } from './inspection-validation';
 import { ZodError } from 'zod';
+import { bridgeIdentity } from './bridge-auth';
 class HttpError extends Error {
     constructor(public status: number, message: string) { super(message); }
 }
@@ -80,7 +81,7 @@ async function details(owner: string, id: string) {
 }
 export async function handleApi(request: Request): Promise<Response> {
     try {
-        const user = await getChatGPTUser();
+        const user = await bridgeIdentity(request, env.DRONEMASTER_BRIDGE_SECRET) ?? await getChatGPTUser();
         if (!user)
             throw new HttpError(401, 'Sign in to continue.');
         const owner = user.userId;

@@ -78,3 +78,9 @@ The Python check requires the local server and removes only its own temporary fi
 The current application is hosted on Cloudflare through Sites. `.openai/hosting.json` identifies the hosted project and its DB/BUCKET bindings. The Sites publishing workflow applies the tracked SQL migrations and deploys the Worker plus static assets. This repository is the source; pushing to GitHub alone does not deploy it. Runtime secrets and local state are excluded from Git.
 
 Third-party runtime notices are in `public/vendor/`. The supplied Dronemaster logo is used as provided. This is an independent application; company endorsement is not claimed. The decorative generated asset is retained with its prompt in `docs/IMAGE_PROMPT.md` and is not inspection evidence.
+
+## Vercel deployment
+
+The public frontend supports Vercel's Next.js runtime (`npm run build:vercel`). The existing Cloudflare service retains D1 and R2. Vercel proxies API operations over a short-lived HMAC-signed server-to-server bridge; the secret never enters the client bundle. Each visitor receives a random HttpOnly, SameSite browser cookie, isolating their workspace without a login screen. Clearing this cookie loses access to that browser workspace.
+
+Required Vercel server variables: `DRONEMASTER_BACKEND_ORIGIN` and `DRONEMASTER_BRIDGE_SECRET`. The Cloudflare service uses the same `DRONEMASTER_BRIDGE_SECRET`. Store values in the hosting providers, never Git. Backend origin must be the exact HTTPS service origin. Photo limit is 4 MB on the Vercel route.
