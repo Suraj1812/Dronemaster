@@ -259,7 +259,7 @@ export async function handleApi(request: Request): Promise<Response> {
                     d.findings.forEach(f => { text += `### ${markdownText(f['title_' + l] || (l === 'it' ? 'Traduzione non fornita' : 'Translation not provided'))}\n\n${markdownText(f['detail_' + l] || (l === 'it' ? 'Traduzione non fornita' : 'Translation not provided'))}\n\n${l === 'en' ? 'Severity' : 'Gravità'}: ${markdownText(f.severity)} | ${l === 'en' ? 'Reviewed' : 'Verificato'}: ${f.reviewed ? '✓' : '—'}\n${l === 'en' ? 'Evidence photo ID' : 'ID foto evidenza'}: ${markdownText(f.file_id) || '—'}\n\n`; });
                 }
                 text += '## Evidence / Evidenze\n\n';
-                d.files.forEach(f => { text += `- ${markdownText(f.name)} | ${f.id} | ${f.bytes} bytes\n`; if (f.classification)
+                d.files.forEach(f => { text += `- ${markdownText(f.name)} | ${f.id} | ${f.bytes} bytes\n`; if (f.classification && f.classification.dtype === 'fp32' && f.classification.pipelineVersion === 'mobilevit-fp32-v1')
                     text += `  Browser-computed general labels (client-reported): ${markdownText(JSON.stringify(f.classification))}\n`; });
                 text += '\nGeneral image labels are not industrial diagnoses. Observations and translations are supplied by the operator.\nLe etichette generiche non sono diagnosi industriali. Osservazioni e traduzioni sono fornite dall’operatore.\n';
                 await audit(owner, 'report_exported', id).run();

@@ -23,7 +23,7 @@ No sample inspection records are seeded. User-created local records remain local
 
 ## Free on-device AI
 
-The optional classifier runs `Xenova/mobilevit-xx-small` through Transformers.js, inside the browser. No OpenAI API key or billable inference endpoint is used. The initial public model/runtime download requires internet access; the browser caches model files where supported. Model scores are generic ImageNet classification outputs, not industrial defect detection, temperature measurements, calibrated confidence or equipment diagnoses. Low-scoring results prompt manual review. Saved classification metadata is explicitly identified as client-reported.
+The optional classifier runs full-precision (`fp32`) `Xenova/mobilevit-xx-small` through Transformers.js, inside the browser. Quantized q8 weights were removed after a real-image regression showed severe misclassification. Older unversioned results are marked outdated and excluded from report predictions. No OpenAI API key or billable inference endpoint is used. The initial public model/runtime download requires internet access; the browser caches model files where supported. Model scores are generic ImageNet classification outputs, not industrial defect detection, temperature measurements, calibrated confidence or equipment diagnoses. Low-scoring results prompt manual review. Saved classification metadata is explicitly identified as client-reported.
 
 English and Italian interface strings are supplied by the app. Observation translations are entered by the operator; missing translations are identified in the report. The app does not pretend to perform automatic translation.
 
@@ -47,3 +47,9 @@ Build and publishing use the installed Sites workflow. `.openai/hosting.json` re
 `public/dronemaster-logo.png` is the user-supplied logo. `public/inspection-hero.png` was generated with the built-in ImageGen tool; its prompt is in `docs/IMAGE_PROMPT.md`. The simplified application does not display the decorative hero, following the user's request to remove marketing sections. It is never treated as inspection evidence. This is an independent application, not a claim of company endorsement.
 
 See `docs/PITCH.md` for concise English and Italian outreach drafts and a demonstration script.
+
+Real-model regression (optional, local fixture not committed):
+
+```sh
+node tests/check_image_model.mjs /path/to/alpine-mountain-image.jpg
+```
