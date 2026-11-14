@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
-import { newInspection, newFinding, classificationInput, imageMime, markdownText } from './inspection-validation';
+import { newInspection, newFinding, imageAnalysisInput, classificationInput, imageMime, markdownText } from './inspection-validation';
 import { ZodError } from 'zod';
 class HttpError extends Error {
     constructor(public status: number, message: string) { super(message); }
@@ -63,7 +63,7 @@ async function owned(owner: string, id: string) { const row = await db().prepare
 async function details(owner: string, id: string) {
     const [parent, photos, findings] = await db().batch<Record<string, unknown>>([
         db().prepare('SELECT * FROM inspections WHERE id=? AND owner_id=? AND deleted_at IS NULL').bind(id, owner),
-        db().prepare('SELECT id,name,mime,bytes,created_at,classification FROM files WHERE inspection_id=? AND owner_id=? AND deleted_at IS NULL ORDER BY created_at').bind(id, owner),
+        db().prepare('SELECT id,name,mime,bytes,created_at,classification,analysis FROM files WHERE inspection_id=? AND owner_id=? AND deleted_at IS NULL ORDER BY created_at').bind(id, owner),
         db().prepare('SELECT * FROM findings WHERE inspection_id=? AND owner_id=? AND deleted_at IS NULL ORDER BY created_at DESC').bind(id, owner)
     ]);
     const inspection = parent.results[0];
@@ -75,8 +75,8 @@ async function details(owner: string, id: string) {
             mime: string;
             bytes: number;
             created_at: string;
-            classification: string | null;
-        }[]).map(f => ({ ...f, classification: f.classification ? JSON.parse(String(f.classification)) : null })), findings: findings.results };
+            classification: string | null; analysis:string|null;
+        }[]).map(f => ({ ...f, analysis:f.analysis?JSON.parse(f.analysis):null, classification: f.classification ? JSON.parse(String(f.classification)) : null })), findings: findings.results };
 }
 export async function handleApi(request: Request): Promise<Response> {
     try {
@@ -183,6 +183,13 @@ export async function handleApi(request: Request): Promise<Response> {
                 throw new HttpError(404, 'Photo not found.');
             return new Response(o.body, { headers: { ...headers, 'Content-Length': String(f.bytes) } });
         }
+        if (p[0] === 'files' && p[1] && p[2] === 'analysis' && p.length === 3 && ['POST','DELETE'].includes(method)) {
+            const photo=await db().prepare('SELECT id FROM files WHERE id=? AND owner_id=? AND deleted_at IS NULL AND EXISTS (SELECT 1 FROM inspections i WHERE i.id=inspection_id AND i.deleted_at IS NULL)').bind(p[1],owner).first();
+            if(!photo)throw new HttpError(404,'Photo not found.');
+            const analysis=method==='DELETE'?null:{...imageAnalysisInput.parse(await body(request)),createdAt:now(),execution:'browser',verification:'client-reported',reviewed:false};
+            await db().batch([db().prepare('UPDATE files SET analysis=? WHERE id=? AND owner_id=?').bind(analysis?JSON.stringify(analysis):null,p[1],owner),audit(owner,analysis?'photo_described':'analysis_cleared',p[1])]);
+            return json({ok:true});
+        }
         if (p[0] === 'files' && p[1] && p[2] === 'classification' && p.length === 3 && method === 'POST') {
             const b = classificationInput.parse(await body(request));
             const f = await db().prepare('SELECT id FROM files WHERE id=? AND owner_id=? AND deleted_at IS NULL AND EXISTS (SELECT 1 FROM inspections i WHERE i.id=inspection_id AND i.deleted_at IS NULL)').bind(p[1], owner).first();
@@ -259,7 +266,7 @@ export async function handleApi(request: Request): Promise<Response> {
                     d.findings.forEach(f => { text += `### ${markdownText(f['title_' + l] || (l === 'it' ? 'Traduzione non fornita' : 'Translation not provided'))}\n\n${markdownText(f['detail_' + l] || (l === 'it' ? 'Traduzione non fornita' : 'Translation not provided'))}\n\n${l === 'en' ? 'Severity' : 'Gravità'}: ${markdownText(f.severity)} | ${l === 'en' ? 'Reviewed' : 'Verificato'}: ${f.reviewed ? '✓' : '—'}\n${l === 'en' ? 'Evidence photo ID' : 'ID foto evidenza'}: ${markdownText(f.file_id) || '—'}\n\n`; });
                 }
                 text += '## Evidence / Evidenze\n\n';
-                d.files.forEach(f => { text += `- ${markdownText(f.name)} | ${f.id} | ${f.bytes} bytes\n`; if (f.classification && f.classification.dtype === 'fp32' && f.classification.pipelineVersion === 'mobilevit-fp32-v1')
+                d.files.forEach(f => { if(f.analysis)text+=`\n### AI draft — not operator-approved / Bozza AI non approvata\n\n${markdownText(f.name)}\nQuestion: ${markdownText(f.analysis.question)}\n\n${markdownText(f.analysis.answer)}\n\nModel: ${markdownText(f.analysis.model)} | Generated: ${markdownText(f.analysis.createdAt)}\n\n`; text += `- ${markdownText(f.name)} | ${f.id} | ${f.bytes} bytes\n`; if (f.classification && f.classification.dtype === 'fp32' && f.classification.pipelineVersion === 'mobilevit-fp32-v1')
                     text += `  Browser-computed general labels (client-reported): ${markdownText(JSON.stringify(f.classification))}\n`; });
                 text += '\nGeneral image labels are not industrial diagnoses. Observations and translations are supplied by the operator.\nLe etichette generiche non sono diagnosi industriali. Osservazioni e traduzioni sono fornite dall’operatore.\n';
                 await audit(owner, 'report_exported', id).run();

@@ -1,55 +1,80 @@
 # Dronemaster
 
-A minimal English–Italian inspection workspace with real photo uploads, saved observations, edit/delete/restore, on-device image classification and bilingual report export.
+An English–Italian inspection workspace for real photo evidence, on-device photo descriptions, editable observations and bilingual reports.
 
-## Local development
+## Run locally
+
+Use Node.js 24+.
 
 ```sh
+npm ci
 npm run dev -- --port 5173 --hostname 127.0.0.1
 ```
 
-Open http://127.0.0.1:5173. Local D1 and R2 persist under `.wrangler/state`; production data is separate. The supplied Sites starter provides its documented local development identity. The deployed application uses the platform's private access boundary. There are no profile, login or logout controls in the product UI.
+Open http://127.0.0.1:5173. The supplied Sites development environment provides a local development identity. Hosted access is private and managed by the platform; the product has no profile/login/logout controls.
 
-## Stack and scope
+Apply the schema migrations to the local D1 database before creating records. Build once to generate the local bindings configuration:
 
-- React, TypeScript and Vinext, deployed as a Cloudflare Worker through Sites.
-- Cloudflare D1 for inspections, observations, audit events and limits; R2 for private image files.
-- Parameterized queries and per-record ownership checks on every API operation.
-- Same-origin mutation checks, bounded uploads, input schemas, image-signature checks and security headers.
-- Soft deletion with Trash and Restore. Deleted photos still count toward storage. A linked evidence photo must be unlinked from observations before deleting it.
-- Maximum 100 inspections, 12 photos per inspection, 6 MB per photo and 100 MB total per workspace; 40 writes per minute. These application limits are not a guarantee about an account's total hosting usage or bill.
+```sh
+npm run build
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local --config dist/server/wrangler.json --persist-to .wrangler/state
+```
 
-No sample inspection records are seeded. User-created local records remain local; they are not silently copied to production.
+If using an existing checkout where migrations were applied directly, do not replay them. Preserve `.wrangler/state` for local records. Production data is separate.
 
-## Free on-device AI
+## Photo analysis
 
-The optional classifier runs full-precision (`fp32`) `Xenova/mobilevit-xx-small` through Transformers.js, inside the browser. Quantized q8 weights were removed after a real-image regression showed severe misclassification. Older unversioned results are marked outdated and excluded from report predictions. No OpenAI API key or billable inference endpoint is used. The initial public model/runtime download requires internet access; the browser caches model files where supported. Model scores are generic ImageNet classification outputs, not industrial defect detection, temperature measurements, calibrated confidence or equipment diagnoses. Low-scoring results prompt manual review. Saved classification metadata is explicitly identified as client-reported.
+1. Create an inspection and upload a JPG, PNG or WebP photo.
+2. Open **Describe this photo**, or ask a specific visual question.
+3. Review the generated English draft. The main page shows three lines; **View details** opens the complete answer.
+4. Choose **Use as observation** to edit the text, add an optional Italian translation and link the source photo before saving.
+5. Mark verified observations reviewed and export a combined English–Italian Markdown report.
 
-English and Italian interface strings are supplied by the app. Observation translations are entered by the operator; missing translations are identified in the report. The app does not pretend to perform automatic translation.
+SmolVLM-500M runs inside a dedicated browser Web Worker using the CPU/WASM runtime. One worker session is reused, requests are queued, and Cancel terminates processing. The matching Transformers.js and ONNX runtime assets are served from the application. Public model weights download from Hugging Face on first use (about 810 MB); there is no paid inference API or API key. Adequate device memory and internet access are required. First use is substantially slower than subsequent runs.
 
-## Routing
+Optional local pre-download:
 
-`/inspections`, `/inspections/new`, `/inspections/:id`, `/reports`, `/settings`, `/trash`. Root and the legacy `/dashboard` route redirect to inspections. Model inference is loaded only when requested.
+```sh
+node scripts/cache-vision-model.mjs
+```
 
-## Checks
+The development server can stream cached model files locally. Model binaries, user photos and databases are never committed. The live app downloads weights directly into the visitor's browser cache where supported.
+
+The model can describe visible content and answer photo questions; it can also make mistakes or unsupported assumptions. It is not a validated industrial defect detector, does not measure temperatures and cannot establish equipment faults. AI drafts remain marked unreviewed in reports. Human-supplied translations are not presented as automatic translation.
+
+## Application features
+
+- Inspections: create, edit, delete and restore.
+- Evidence photos: private upload, preview, rename, delete and restore.
+- Observations: edit bilingual text, link evidence, set priority, review, delete and restore.
+- Compact photo and observation cards, full detail dialogs and English/Italian interface.
+- Bilingual report export from the actual saved records, with source IDs and separate AI draft sections.
+- No seeded demonstration inspection records.
+
+Deleted photos retain their underlying file for restoration and continue to count toward storage. Unlink a photo from active observations before deleting it.
+
+## Stack
+
+React, TypeScript, Vinext, Cloudflare Workers, D1 and R2. Python runs real local HTTP workflow checks. The deployed backend is TypeScript, not Python.
+
+The API enforces per-record ownership, parameterized SQL, same-origin writes, bounded request bodies, validated image signatures, rate limiting and database-enforced upload quotas. Security headers protect the hosted worker. Limits: 100 inspections, 12 photos per inspection, 6 MB per photo, 100 MB storage per workspace and 40 writes per minute. These app limits are not an account-wide hosting billing guarantee.
+
+## Verification
 
 ```sh
 npx tsc --noEmit
+node --test tests/backend.test.mjs
 python3 tests/check_local_workflow.py
 ```
 
-The HTTP check requires the local development server. It exercises real database and file operations, including edits, soft deletion, restoration, ownership boundaries and bilingual export, then removes only its own temporary fixture. It never targets production. A browser run also verified real on-device inference on an uploaded image.
+The Python check requires the local server and removes only its own temporary fixture. It never targets production. Backend tests run production handlers against an isolated SQLite database with D1-compatible bindings. Visual and inference testing use actual uploaded images; no model output is hardcoded.
 
-Build and publishing use the installed Sites workflow. `.openai/hosting.json` retains the Site identity and declares `DB` and `BUCKET`; migrations under `drizzle/` are applied by Sites before deployment. Production remains private. Hosting runs on Cloudflare through Sites; this does not claim to deploy into the user's separate Cloudflare dashboard account.
+## Routes
 
-## Brand assets
+`/inspections`, `/inspections/new`, `/inspections/:id`, `/reports`, `/settings`, `/trash`.
 
-`public/dronemaster-logo.png` is the user-supplied logo. `public/inspection-hero.png` was generated with the built-in ImageGen tool; its prompt is in `docs/IMAGE_PROMPT.md`. The simplified application does not display the decorative hero, following the user's request to remove marketing sections. It is never treated as inspection evidence. This is an independent application, not a claim of company endorsement.
+## Deployment
 
-See `docs/PITCH.md` for concise English and Italian outreach drafts and a demonstration script.
+The current application is hosted on Cloudflare through Sites. `.openai/hosting.json` identifies the hosted project and its DB/BUCKET bindings. The Sites publishing workflow applies the tracked SQL migrations and deploys the Worker plus static assets. This repository is the source; pushing to GitHub alone does not deploy it. Runtime secrets and local state are excluded from Git.
 
-Real-model regression (optional, local fixture not committed):
-
-```sh
-node tests/check_image_model.mjs /path/to/alpine-mountain-image.jpg
-```
+Third-party runtime notices are in `public/vendor/`. The supplied Dronemaster logo is used as provided. This is an independent application; company endorsement is not claimed. The decorative generated asset is retained with its prompt in `docs/IMAGE_PROMPT.md` and is not inspection evidence.

@@ -1,5 +1,7 @@
+import { createReadStream,existsSync,statSync } from 'node:fs';
+import { resolve } from 'node:path';
 import vinext from "vinext";
-import { defineConfig } from "vite";
+import { defineConfig, type ViteDevServer } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { readExecutionProfile } from "./scripts/execution-profile.mjs";
 import { configureToolEnvironment } from "./scripts/tool-environment.mjs";
@@ -53,6 +55,22 @@ export default defineConfig(async ({ command }) => {
         : {}),
     },
     plugins: [
+      {
+        name: 'local-vision-model-cache',
+        configureServer(server: ViteDevServer) {
+          // Serve only public model weights in development; never package them.
+          server.middlewares.use('/models/', (request,response,next) => {
+            const path=(request.url||'').split('?')[0];
+            if(!/^\/?HuggingFaceTB\/SmolVLM-500M-Instruct\/(?:onnx\/[a-z0-9_]+\.onnx|[a-z0-9_]+\.json)$/.test(path))return next();
+            const file=resolve(process.cwd(),'node_modules/@huggingface/transformers/.cache',path.replace(/^\//,''));
+            if(!existsSync(file)||!statSync(file).isFile())return next();
+            response.setHeader('Content-Type',file.endsWith('.json')?'application/json':'application/octet-stream');
+            response.setHeader('Content-Length',statSync(file).size);
+            response.setHeader('Cache-Control','public, max-age=3600');
+            createReadStream(file).on('error',()=>response.destroy()).pipe(response);
+          });
+        },
+      },
       vinext(),
       sites({ mockAuth: !managedLinux }),
       connectorPreview(),

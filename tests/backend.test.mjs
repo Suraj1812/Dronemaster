@@ -194,3 +194,23 @@ test('dashboard and evidence queries use indexes without temporary sort', () => 
   const filePlan = sqlite.prepare('EXPLAIN QUERY PLAN SELECT * FROM files WHERE inspection_id=? AND owner_id=? AND deleted_at IS NULL ORDER BY created_at').all('inspection', 'owner').map(r => r.detail).join('\n');
   assert.match(filePlan, /file_inspection_active_created/); assert.doesNotMatch(filePlan, /TEMP B-TREE/);
 });
+
+test('photo analysis saves a traceable draft, never an approved finding', async()=>{
+ inspection();const id=photo();
+ const body={model:'HuggingFaceTB/SmolVLM-500M-Instruct',pipelineVersion:'smolvlm-500m-v1',question:'Describe the photo.',answer:'Green leaves are visible against a dark background.'};
+ assert.equal((await handleApi(request('files/'+id+'/analysis','POST',body))).status,200);
+ const saved=JSON.parse(sqlite.prepare('SELECT analysis FROM files WHERE id=?').get(id).analysis);
+ assert.equal(saved.answer,body.answer);assert.equal(saved.reviewed,false);assert.equal(saved.verification,'client-reported');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM findings').get().n,0);
+ const report=await (await handleApi(request('inspections/inspection/report'))).text();
+ assert.match(report,/AI draft — not operator-approved/);assert.match(report,/Green leaves/);
+ assert.equal((await handleApi(request('files/'+id+'/analysis','DELETE'))).status,200);
+ assert.equal(sqlite.prepare('SELECT analysis FROM files WHERE id=?').get(id).analysis,null);
+});
+test('photo analysis rejects foreign files and invalid generated payloads',async()=>{
+ inspection();const id=photo();const body={model:'HuggingFaceTB/SmolVLM-500M-Instruct',pipelineVersion:'smolvlm-500m-v1',question:'Describe image',answer:'Visible green leaves.'};
+ globalThis.__backendTestUser={userId:'another-user'};
+ assert.equal((await handleApi(request('files/'+id+'/analysis','POST',body))).status,404);
+ globalThis.__backendTestUser={userId:'owner'};
+ assert.equal((await handleApi(request('files/'+id+'/analysis','POST',{...body,answer:''}))).status,400);
+});

@@ -4,3 +4,5 @@ export const newFinding=z.object({titleEn:z.string().trim().min(2).max(150),titl
 export const classificationInput=z.object({model:z.literal('Xenova/mobilevit-xx-small'),dtype:z.literal('fp32'),pipelineVersion:z.literal('mobilevit-fp32-v1'),predictions:z.array(z.object({label:z.string().min(1).max(250),score:z.number().min(0).max(1)})).min(1).max(3)});
 export function imageMime(b:Uint8Array):string|null{if(b.length<12)return null;if(b[0]===255&&b[1]===216&&b[2]===255)return 'image/jpeg';if([137,80,78,71,13,10,26,10].every((n,i)=>b[i]===n))return 'image/png';if(String.fromCharCode(...b.slice(0,4))==='RIFF'&&String.fromCharCode(...b.slice(8,12))==='WEBP')return 'image/webp';return null;}
 export function markdownText(v:unknown){return String(v??'').replace(/[\\`*_{}[\]()#+.!|<>]/g,'\\$&').replace(/\r/g,'');}
+
+export const imageAnalysisInput=z.object({model:z.literal('HuggingFaceTB/SmolVLM-500M-Instruct'),question:z.string().trim().min(3).max(1000),answer:z.string().trim().min(3).max(8000),pipelineVersion:z.literal('smolvlm-500m-v1')});
