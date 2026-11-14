@@ -1,58 +1,31 @@
-# Dronemaster application — project and outreach pack
+# Dronemaster — application and outreach pack
 
-## Recommended project
+## Project
 
-**AERIS: bilingual industrial inspection copilot.** Review inspection findings, investigate anomalies, ask evidence-grounded questions in English or Italian, and export a bilingual report with source references. This targets a plausible engineering workflow from the company's stated industrial inspection and AI integration focus. It is a portfolio proposal, not a claim about their internal tools or current product needs.
+A private English–Italian inspection workspace: create an inspection, upload actual photos, add evidence-linked observations, review them, and export a bilingual report. Edit, delete and restore inspections, photos and observations. Optional on-device MobileViT classification requires no paid AI API and never claims industrial defect detection.
 
-Stack: Python API + SQLite + vanilla JavaScript. Optional OpenAI Responses API for structured bilingual answers. Start with a small trustworthy demo; image ingestion, CV detection and C++ edge integration are future extensions rather than claimed implemented features.
+The public company website describes industrial inspection, robotics, software integration, AI and cybersecurity: https://www.dronemaster.it/. The supplied job lists Python, C++/JavaScript, relational databases and cybersecurity. This implementation demonstrates JavaScript/TypeScript, SQL, authenticated data access and Python HTTP integration tests. The deployed backend is a Cloudflare Worker, not Python; do not misrepresent that in an application. C++ is not implemented.
 
-Two other directions: (1) bilingual maintenance-manual assistant with passage citations, Python ingestion and SQL document metadata; (2) telemetry anomaly review dashboard with documented statistical rules and audit logs. AERIS combines the clearest visual demonstration with the shared job requirements.
+## English message
 
-## English LinkedIn message
+Hi Federico, I applied for the Software Engineer role and built an independent inspection workspace inspired by Dronemaster’s industrial inspection work. It supports actual photo uploads, evidence-linked observations, English–Italian reports, and optional image classification that runs locally in the browser without a paid AI API.
 
-Hi Federico, thanks for connecting. I applied for the Software Engineer role and built AERIS, a small independent prototype inspired by Dronemaster’s industrial inspection work: an English–Italian workspace for reviewing findings, exploring telemetry and exporting evidence-linked reports.
+The implementation uses JavaScript/TypeScript and SQL, with per-record access checks, validated uploads and Python integration tests. I’d be happy to share the source and a brief walkthrough. Would this workflow be relevant to the team?
 
-It uses Python, JavaScript and SQLite, with input validation, parameterized SQL and audit events. The demo works with synthetic data; an optional server-side AI integration supports bilingual answers with finding references.
+## Messaggio italiano
 
-I’d be happy to share a short walkthrough and the source code. Would this kind of inspection workflow be relevant to the team?
+Ciao Federico, ho inviato la candidatura per il ruolo di Software Engineer e ho sviluppato uno spazio di lavoro indipendente ispirato alle attività di ispezione industriale di Dronemaster. Consente di caricare foto reali, registrare osservazioni collegate alle evidenze ed esportare rapporti in italiano e inglese. La classificazione delle immagini opzionale funziona nel browser, senza API AI a pagamento.
 
-## Italian LinkedIn message
+Ho utilizzato JavaScript/TypeScript e SQL, con controlli di accesso sui singoli record, validazione dei file caricati e test di integrazione in Python. Mi farebbe piacere condividere il codice e una breve presentazione. Un flusso di questo tipo potrebbe essere utile al team?
 
-Ciao Federico, grazie per il collegamento. Ho inviato la candidatura per il ruolo di Software Engineer e ho sviluppato AERIS, un piccolo prototipo indipendente ispirato alle attività di ispezione industriale di Dronemaster: uno spazio di lavoro in italiano e inglese per esaminare i rilievi, consultare la telemetria ed esportare rapporti con riferimenti alle evidenze.
+Choose one version. No message has been sent. The hosted application is private; verify recipient access before sharing a link. An alternative is a short screen recording plus source code.
 
-Ho utilizzato Python, JavaScript e SQLite, con validazione degli input, query parametrizzate e registrazione degli eventi. La demo usa dati sintetici; un’integrazione AI opzionale lato server consente di ottenere risposte bilingui con riferimenti ai rilievi.
+## 60-second walkthrough
 
-Mi farebbe piacere condividere una breve presentazione e il codice sorgente. Un flusso di questo tipo potrebbe essere utile al vostro team?
+1. Create an inspection and upload a real image.
+2. Optionally run the small on-device classifier; explain that general labels are not defect diagnoses.
+3. Add an observation in English and Italian, link its photo, and mark it reviewed.
+4. Edit a record, move an expendable item to Trash and restore it.
+5. Switch interface language and export the combined EN/IT Markdown report.
 
-## Short mixed-language version
-
-Ciao Federico! I applied for the Software Engineer role and built a small English–Italian inspection prototype inspired by Dronemaster’s work. Python + JavaScript + SQL, with evidence-linked findings, telemetry and bilingual reports. It uses synthetic data and has an optional server-side AI integration. Mi farebbe piacere mostrarti una breve demo e condividere il codice. Would a short walkthrough be useful?
-
-Choose one version; do not send all three. No message has been sent. Add a recording or an accessible demo link only after checking its access settings. The current hosted Sites preview is owner-private.
-
-## 90-second demo script
-
-1. **0–15 seconds:** “I built a review workflow for industrial inspections. Everything here is synthetic and clearly labelled.” Show coverage, findings and the inspection schematic.
-2. **15–35 seconds:** Select the high severity thermal anomaly. Explain the 78.4°C observation and 42.1°C reference. Distinguish the observation from an unproven root cause.
-3. **35–50 seconds:** Ask about the anomaly and click F-001 to trace the source. Explain that default mode is deterministic retrieval; live AI is available only with the local backend and a configured API key.
-4. **50–65 seconds:** Switch to Italian. Show translated findings and ask about the signal drop. Do not claim that bilingual app content demonstrates personal Italian proficiency.
-5. **65–80 seconds:** Show telemetry and export the combined EN/IT Markdown report.
-6. **80–90 seconds:** Explain Python API, SQL audit records, security checks and tests. Offer to discuss how a real team's inspection workflow would change the design.
-
-## Interview talking points
-
-- Why this scope: fast human review and traceability are demonstrable without flight hardware.
-- Why relational SQL: clear inspection-to-findings relationships, validation and auditable actions.
-- Why JavaScript: meets the listed alternative to C++ and makes the demo easy to inspect.
-- Why abstention: missing evidence should not become an invented diagnosis.
-- Why no forced C++ service: no measured performance requirement in this prototype.
-- What comes next: real labelled data, proper evaluation of retrieval and bilingual factuality, auth and role controls, ingestion validation, and a production backend.
-- Ask the recruiter: which part of the role involves embedded C++, web applications, AI integration and cybersecurity? Does “Informatica” refer to general IT experience?
-
-Do not present synthetic confidence annotations as measured model accuracy or promise production readiness. No prototype can guarantee recruiter interest.
-
-## Sources
-
-- Company: https://www.dronemaster.it/ — industrial inspections, software/firmware, AI and cybersecurity integration (checked 14 November 2026).
-- Job: user-supplied Software Engineer listing, https://www.linkedin.com/jobs/view/4483459734/.
-- API: https://developers.openai.com/api/reference/resources/responses/methods/create.
+No prediction scores should be presented as measured model accuracy. Ask the team about real data formats, embedded C++ work and industrial validation requirements before proposing extensions. The job's Italian “Informatica” requirement may refer to general computing experience; ask rather than assume an ETL product.

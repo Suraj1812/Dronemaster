@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1794664951753,
+      "tag": "0000_amazing_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794665689388,
+      "tag": "0001_acoustic_ikaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794666053813,
+      "tag": "0002_chunky_the_anarchist",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794666106608,
+      "tag": "0003_enforce_upload_limits",
+      "breakpoints": true
+    }
+  ]
+}
