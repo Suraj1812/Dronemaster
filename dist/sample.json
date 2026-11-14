@@ -1,0 +1,21 @@
+{
+  "id": "INS-2026-042",
+  "site": "Valle Seriana · Facility 04",
+  "date": "2026-11-14",
+  "duration": "18:42",
+  "coverage": 96.8,
+  "telemetry": [
+    {"time":"09:00","battery":98,"temperature":27,"signal":98},
+    {"time":"09:03","battery":88,"temperature":29,"signal":97},
+    {"time":"09:06","battery":77,"temperature":32,"signal":94},
+    {"time":"09:09","battery":65,"temperature":41,"signal":78},
+    {"time":"09:12","battery":54,"temperature":35,"signal":92},
+    {"time":"09:15","battery":42,"temperature":31,"signal":95},
+    {"time":"09:18","battery":31,"temperature":29,"signal":96}
+  ],
+  "findings": [
+    {"id":"F-001","severity":"high","category":"thermal","x":62,"y":37,"temperature":78.4,"baseline":42.1,"title":{"en":"Thermal anomaly · Panel B7","it":"Anomalia termica · Pannello B7"},"detail":{"en":"Panel B7 measured 78.4°C against a reference of 42.1°C, a difference of 36.3°C. A qualified technician should inspect the connection before maintenance is scheduled.","it":"Il pannello B7 ha raggiunto 78,4°C rispetto al riferimento di 42,1°C, con una differenza di 36,3°C. Un tecnico qualificato dovrebbe controllare il collegamento prima di pianificare la manutenzione."},"source":"thermal_frame_0248.tiff · 09:08:32","confidence":94},
+    {"id":"F-002","severity":"medium","category":"visual","x":32,"y":63,"title":{"en":"Surface damage · Service walkway","it":"Danno superficiale · Passerella di servizio"},"detail":{"en":"A visible surface discontinuity was annotated along the west service walkway. The sample image cannot establish structural depth. Request an on-site inspection.","it":"È stata annotata una discontinuità superficiale visibile lungo la passerella ovest. L’immagine di esempio non consente di determinarne la profondità strutturale. Richiedere un’ispezione in loco."},"source":"visual_frame_0186.jpg · 09:06:14","confidence":87},
+    {"id":"F-003","severity":"low","category":"telemetry","x":78,"y":70,"title":{"en":"Temporary signal degradation","it":"Degrado temporaneo del segnale"},"detail":{"en":"Signal quality dropped to 78% at 09:09 and recovered to 92% at 09:12. The cause is not established by the recorded telemetry.","it":"La qualità del segnale è scesa al 78% alle 09:09 ed è tornata al 92% alle 09:12. La causa non è determinabile dalla telemetria registrata."},"source":"telemetry.csv · 09:09–09:12","confidence":99}
+  ]
+}
