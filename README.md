@@ -11,7 +11,7 @@ npm ci
 npm run dev -- --port 5173 --hostname 127.0.0.1
 ```
 
-Open http://127.0.0.1:5173. The supplied Sites development environment provides a local development identity. Hosted access is private and managed by the platform; the product has no profile/login/logout controls.
+Open http://127.0.0.1:5173. The supplied Sites development environment provides a local development identity. The public Vercel app uses an isolated browser workspace and has no profile/login/logout controls.
 
 Apply the schema migrations to the local D1 database before creating records. Build once to generate the local bindings configuration:
 
@@ -55,9 +55,9 @@ Deleted photos retain their underlying file for restoration and continue to coun
 
 ## Stack
 
-React, TypeScript, Vinext, Cloudflare Workers, D1 and R2. Python runs real local HTTP workflow checks. The deployed backend is TypeScript, not Python.
+React, TypeScript, Next.js on Vercel, plus Vinext, Cloudflare Workers, D1 and R2 for the storage service. Python runs real local HTTP workflow checks. The deployed backend is TypeScript, not Python.
 
-The API enforces per-record ownership, parameterized SQL, same-origin writes, bounded request bodies, validated image signatures, rate limiting and database-enforced upload quotas. Security headers protect the hosted worker. Limits: 100 inspections, 12 photos per inspection, 6 MB per photo, 100 MB storage per workspace and 40 writes per minute. These app limits are not an account-wide hosting billing guarantee.
+The API enforces per-record ownership, parameterized SQL, same-origin writes, bounded request bodies, validated image signatures, rate limiting and database-enforced upload quotas. Security headers protect the hosted worker. Limits: 100 inspections, 12 photos per inspection, 4 MB per photo through Vercel (6 MB at the storage service), 100 MB storage per workspace and 40 writes per minute. These app limits are not an account-wide hosting billing guarantee.
 
 ## Verification
 
@@ -65,9 +65,10 @@ The API enforces per-record ownership, parameterized SQL, same-origin writes, bo
 npx tsc --noEmit
 node --test tests/backend.test.mjs
 python3 tests/check_local_workflow.py
+python3 tests/check_public_workflow.py https://dronemaster-phi.vercel.app
 ```
 
-The Python check requires the local server and removes only its own temporary fixture. It never targets production. Backend tests run production handlers against an isolated SQLite database with D1-compatible bindings. Visual and inference testing use actual uploaded images; no model output is hardcoded.
+The local Python check requires the local server and removes only its own temporary fixture. The public check uses its own guest session on the target deployment, verifies storage and recovery over HTTP, and moves its temporary inspection to Trash. Browser-side inference requires a separate browser check. Backend tests run production handlers against an isolated SQLite database with D1-compatible bindings. Visual and inference testing use actual uploaded images; no model output is hardcoded.
 
 ## Routes
 
@@ -75,7 +76,7 @@ The Python check requires the local server and removes only its own temporary fi
 
 ## Deployment
 
-The current application is hosted on Cloudflare through Sites. `.openai/hosting.json` identifies the hosted project and its DB/BUCKET bindings. The Sites publishing workflow applies the tracked SQL migrations and deploys the Worker plus static assets. This repository is the source; pushing to GitHub alone does not deploy it. Runtime secrets and local state are excluded from Git.
+The public application is live at [dronemaster-phi.vercel.app](https://dronemaster-phi.vercel.app/inspections). The frontend and API proxy run on Vercel; the storage service runs on Cloudflare through Sites. `.openai/hosting.json` identifies the hosted project and its DB/BUCKET bindings. The Sites publishing workflow applies the tracked SQL migrations and deploys the Worker plus static assets. The connected GitHub `main` branch automatically deploys the Vercel frontend. Storage-service changes still require the Sites publishing workflow. Runtime secrets and local state are excluded from Git.
 
 Third-party runtime notices are in `public/vendor/`. The supplied Dronemaster logo is used as provided. This is an independent application; company endorsement is not claimed. The decorative generated asset is retained with its prompt in `docs/IMAGE_PROMPT.md` and is not inspection evidence.
 
