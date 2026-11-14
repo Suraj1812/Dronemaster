@@ -1,12 +1,12 @@
 export const VISION_MODEL='HuggingFaceTB/SmolVLM-500M-Instruct';
 export const VISION_VERSION='smolvlm-500m-v1';
 type State={worker:Worker|null;queue:Promise<unknown>};
-const globals=globalThis as typeof globalThis & {__dronemasterWorkerV4?:State};
-const shared=globals.__dronemasterWorkerV4??={worker:null,queue:Promise.resolve()};
+const globals=globalThis as typeof globalThis & {__dronemasterWorkerV5?:State};
+const shared=globals.__dronemasterWorkerV5??={worker:null,queue:Promise.resolve()};
 export async function describePhoto(url:string,question:string,status:(text:string)=>void,signal?:AbortSignal):Promise<string>{
  const task=shared.queue.catch(()=>{}).then(()=>new Promise<string>((resolve,reject)=>{
   if(signal?.aborted){reject(new DOMException('Analysis cancelled','AbortError'));return;}
-  const worker=shared.worker??=new Worker('/vision-worker.js',{type:'module'});
+  const worker=shared.worker??=new Worker('/vision-worker.js?v=2',{type:'module'});
   const id=crypto.randomUUID();
   function clean(){worker.removeEventListener('message',message);worker.removeEventListener('error',error);signal?.removeEventListener('abort',abort);}
   function stop(){worker.terminate();if(shared.worker===worker)shared.worker=null;}

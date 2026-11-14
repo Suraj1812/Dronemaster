@@ -1,16 +1,25 @@
 import {AutoProcessor,AutoModelForVision2Seq,RawImage,TextStreamer,env} from './vendor/transformers-3.8.1.min.js';
+import {createModelDownloadProgress} from './vision-progress.js';
 const MODEL='HuggingFaceTB/SmolVLM-500M-Instruct';
 let engine=null;
 self.onmessage=async({data})=>{
  const {id,url,question,localAssets}=data;
- const status=text=>self.postMessage({id,type:'progress',text});
+ let lastStatus='';
+ const status=text=>{if(text!==lastStatus){lastStatus=text;self.postMessage({id,type:'progress',text});}};
  try{
   env.allowLocalModels=!!localAssets;env.localModelPath='/models/';
   env.backends.onnx.wasm.numThreads=1;env.backends.onnx.wasm.wasmPaths='/vendor/';
   if(!engine){
-   status('Loading vision model…');
+   status('Loading model configuration…');
    const processor=await AutoProcessor.from_pretrained(MODEL);
-   const model=await AutoModelForVision2Seq.from_pretrained(MODEL,{device:'wasm',dtype:{embed_tokens:'fp32',vision_encoder:'fp32',decoder_model_merged:'q4'},progress_callback:p=>{if(p.status==='progress')status(`Loading model ${Math.round(p.progress||0)}%`);}});
+   const trackDownload=createModelDownloadProgress();
+   status('Downloading model files…');
+   const model=await AutoModelForVision2Seq.from_pretrained(MODEL,{device:'wasm',dtype:{embed_tokens:'fp32',vision_encoder:'fp32',decoder_model_merged:'q4'},progress_callback:event=>{
+    const progress=trackDownload(event);
+    if(!progress)return;
+    if(progress.complete)status('Download complete · preparing model…');
+    else status(`Loading model files ${progress.percent}% · ${Math.floor(progress.loaded/1e6)} / ${Math.ceil(progress.total/1e6)} MB`);
+   }});
    engine={processor,model};
   }
   const {processor,model}=engine;
